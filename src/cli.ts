@@ -4,11 +4,13 @@ import { startServer } from './server'
 import { assert } from '@blackglory/errors'
 import { Level, Logger, TerminalTransport, stringToLevel } from 'extra-logger'
 import { parseServerInfo } from '@utils/parse-server-info'
+import { go } from '@blackglory/prelude'
 
 program
   .name(require('../package.json').name)
   .version(require('../package.json').version)
   .description(require('../package.json').description)
+  .option('--timeout [seconds]', '', '30')
   .option('--port [port]', '', '53')
   .option('--time-to-live [seconds]')
   .option('--stale-while-revalidate [seconds]')
@@ -25,6 +27,7 @@ program
     startServer({
       logger
     , dnsServer: parseServerInfo(server)
+    , timeout: options.timeout
     , port: options.port
     , timeToLive: options.timeToLive
     , staleWhileRevalidate: options.staleWhileRevalidate
@@ -36,6 +39,7 @@ program
 function getOptions() {
   const opts = program.opts<{
     port: string
+    timeout: string
     timeToLive?: string
     staleWhileRevalidate?: string
     staleIfError?: string
@@ -43,20 +47,41 @@ function getOptions() {
   }>()
 
   assert(/^\d+$/.test(opts.port), 'The parameter port must be integer')
-  const port = Number.parseInt(opts.port, 10)
-  const timeToLive = opts.timeToLive
-    ? Number.parseInt(opts.timeToLive, 10) * 1000
-    : undefined
-  const staleWhileRevalidate = opts.staleWhileRevalidate
-    ? Number.parseInt(opts.staleWhileRevalidate, 10) * 1000
-    : undefined
-  const staleIfError = opts.staleIfError
-    ? Number.parseInt(opts.staleIfError, 10) * 1000
-    : undefined
+  const port: number = Number.parseInt(opts.port, 10)
+
+  assert(/^\d+$/.test(opts.timeout), 'The parameter timeout must be integer')
+  const timeout: number = Number.parseInt(opts.port, 10) * 1000
+
+  const timeToLive: number | undefined = go(() => {
+    if (opts.timeToLive) {
+      assert(/^\d+$/.test(opts.timeToLive), 'The parameter timeout must be integer')
+      return Number.parseInt(opts.timeToLive, 10) * 1000
+    } else {
+      return undefined
+    }
+  })
+
+  const staleWhileRevalidate: number | undefined = go(() => {
+    if (opts.staleWhileRevalidate) {
+      return Number.parseInt(opts.staleWhileRevalidate, 10) * 1000
+    } else {
+      return undefined
+    }
+  })
+
+  const staleIfError: number | undefined = go(() => {
+    if (opts.staleIfError) {
+      return Number.parseInt(opts.staleIfError, 10) * 1000
+    } else {
+      return undefined
+    }
+  })
+
   const logLevel = stringToLevel(opts.log, Level.Info)
 
   return {
     port
+  , timeout
   , timeToLive
   , staleWhileRevalidate
   , staleIfError

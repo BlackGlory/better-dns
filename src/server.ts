@@ -2,8 +2,6 @@ import { IServerInfo } from '@utils/parse-server-info'
 import * as dns from 'native-node-dns'
 import { getErrorResultAsync } from 'return-style'
 import { Logger } from 'extra-logger'
-import chalk from 'chalk'
-import ms from 'ms'
 import { RecordType } from './record-types'
 import { go, isUndefined } from '@blackglory/prelude'
 import { memoizeStaleWhileRevalidateAndStaleIfError } from 'extra-memoize'
@@ -11,10 +9,13 @@ import {
   ExpirableCacheWithStaleWhileRevalidateAndStaleIfError
 } from '@extra-memoize/memory-cache'
 import { reusePendingPromise } from 'extra-promise'
+import chalk from 'chalk'
+import { resolve } from './resolve'
 
 interface IStartServerOptions {
   port: number
   dnsServer: IServerInfo
+  timeout: number
   logger: Logger
   timeToLive?: number
   staleWhileRevalidate?: number
@@ -24,6 +25,7 @@ interface IStartServerOptions {
 export function startServer({
   logger
 , port
+, timeout
 , dnsServer
 , timeToLive
 , staleWhileRevalidate
@@ -42,10 +44,14 @@ export function startServer({
         , staleWhileRevalidate ?? 0
         , staleIfError ?? 0
         )
-      }, resolve)
+      }, configuredResolve)
     }
 
-    return reusePendingPromise(resolve)
+    return reusePendingPromise(configuredResolve)
+
+    function configuredResolve(question: dns.IQuestion): Promise<dns.IPacket> {
+      return resolve(dnsServer, question, timeout)
+    }
   })
 
   server.on('error', console.error)
@@ -59,7 +65,7 @@ export function startServer({
     logger.trace(`${formatHostname(question.name)} ${RecordType[question.type]}`)
 
     const startTime = Date.now()
-    const [err, response] = await getErrorResultAsync(() => memoizedResolve(dnsServer, question))
+    const [err, response] = await getErrorResultAsync(() => memoizedResolve(question))
     if (err) {
       logger.error(`${formatHostname(question.name)} ${err}`, getElapsed(startTime))
       return sendResponse()
@@ -78,39 +84,6 @@ export function startServer({
   })
 
   return server.serve(port)
-}
-
-function resolve(server: IServerInfo, question: dns.IQuestion): Promise<dns.IPacket> {
-  return new Promise((resolve, reject) => {
-    let response: dns.IPacket
-    const request = dns.Request({
-      question
-    , server: {
-        address: server.host
-      , port: server.port
-      , type: 'udp'
-      }
-    , timeout: ms('30s')
-    , cache: false
-    , try_edns: true
-    })
-
-    request.on('timeout', () => reject(new Error('timeout')))
-    request.on('cancelled', () => reject(new Error('cancelled')))
-    request.on('end', () => {
-      if (response) {
-        resolve(response)
-      } else {
-        reject(new Error('No response'))
-      }
-    })
-    request.on('message', (err, msg) => {
-      if (err) return reject(err)
-      response = msg
-    })
-
-    request.send()
-  })
 }
 
 function formatHostname(hostname: string): string {
