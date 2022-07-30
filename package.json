@@ -25,6 +25,7 @@
     "build:patch": "tscpaths --project tsconfig.build.json --src ./src --out ./lib",
     "bundle": "webpack --stats-error-details",
     "smoke": "node dist/cli.cjs --help",
+    "prepublishOnly": "run-s clean build bundle",
     "release": "standard-version"
   },
   "husky": {
