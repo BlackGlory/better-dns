@@ -3,7 +3,7 @@ import * as dns from 'native-node-dns'
 import { getErrorResultAsync } from 'return-style'
 import { Logger } from 'extra-logger'
 import { RecordType } from './record-types'
-import { go, isUndefined } from '@blackglory/prelude'
+import { go, isUndefined, isEmptyArray } from '@blackglory/prelude'
 import { memoizeStaleWhileRevalidateAndStaleIfError } from 'extra-memoize'
 import {
   ExpirableCacheWithStaleWhileRevalidateAndStaleIfError
@@ -11,6 +11,7 @@ import {
 import { reusePendingPromise } from 'extra-promise'
 import chalk from 'chalk'
 import { resolve } from './resolve'
+import { CustomError } from '@blackglory/errors'
 
 interface IStartServerOptions {
   port: number
@@ -20,6 +21,12 @@ interface IStartServerOptions {
   timeToLive?: number
   staleWhileRevalidate?: number
   staleIfError?: number
+}
+
+class NoAnswerError extends CustomError {
+  constructor(public readonly response: dns.IPacket) {
+    super()
+  }
 }
 
 export function startServer({
@@ -49,8 +56,14 @@ export function startServer({
 
     return reusePendingPromise(configuredResolve)
 
-    function configuredResolve(question: dns.IQuestion): Promise<dns.IPacket> {
-      return resolve(dnsServer, question, timeout)
+    async function configuredResolve(question: dns.IQuestion): Promise<dns.IPacket> {
+      const response = await resolve(dnsServer, question, timeout)
+      if (isEmptyArray(response.answer)) {
+        // 为了正确缓存该函数, 在没有结果时断定为上游解析失败, 抛出错误而不是缓存空响应.
+        throw new NoAnswerError(response)
+      } else {
+        return response
+      }
     }
   })
 
@@ -65,16 +78,23 @@ export function startServer({
     logger.trace(`${formatHostname(question.name)} ${RecordType[question.type]}`)
 
     const startTime = Date.now()
-    const [err, response] = await getErrorResultAsync(() => memoizedResolve(question))
+    const [err, response] = await go(async () => {
+      const [err, response] = await getErrorResultAsync(() => memoizedResolve(question))
+      if (err && err instanceof NoAnswerError) {
+        return [undefined, err.response]
+      } else {
+        return [err, response]
+      }
+    })
     if (err) {
       logger.error(`${formatHostname(question.name)} ${err}`, getElapsed(startTime))
       return sendResponse()
     }
     logger.info(`${formatHostname(question.name)} ${RecordType[question.type]}`, getElapsed(startTime))
 
-    res.header.rcode = response.header.rcode
-    res.answer = response.answer
-    res.authority = response.authority
+    res.header.rcode = response!.header.rcode
+    res.answer = response!.answer
+    res.authority = response!.authority
     sendResponse()
 
     function sendResponse() {
