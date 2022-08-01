@@ -6,10 +6,13 @@ import { Level, Logger, TerminalTransport, stringToLevel } from 'extra-logger'
 import { parseServerInfo } from '@utils/parse-server-info'
 import { go } from '@blackglory/prelude'
 
+const { name, version, description } = require('../package.json')
+process.title = name
+
 program
-  .name(require('../package.json').name)
-  .version(require('../package.json').version)
-  .description(require('../package.json').description)
+  .name(name)
+  .version(version)
+  .description(description)
   .option('--timeout [seconds]', '', '30')
   .option('--port [port]', '', '53')
   .option('--time-to-live [seconds]')
