@@ -3,8 +3,11 @@ import * as dns from 'native-node-dns'
 import { getErrorResultAsync } from 'return-style'
 import { Logger } from 'extra-logger'
 import { RecordType } from './record-types'
-import { go, isUndefined, isEmptyArray } from '@blackglory/prelude'
-import { memoizeStaleWhileRevalidateAndStaleIfError, State as MemoizeState } from 'extra-memoize'
+import { go, isUndefined } from '@blackglory/prelude'
+import {
+  memoizeStaleWhileRevalidateAndStaleIfError
+, State as MemoizeState
+} from 'extra-memoize'
 import {
   ExpirableCacheWithStaleWhileRevalidateAndStaleIfError
 } from '@extra-memoize/memory-cache'
@@ -53,7 +56,11 @@ export function startServer({
       isUndefined(staleWhileRevalidate) &&
       isUndefined(staleIfError)
     ) {
-      const memoizedResolve = reusePendingPromise(configuredResolve, { verbose: true })
+      const memoizedResolve = reusePendingPromise(
+        configuredResolve
+      , { verbose: true }
+      )
+
       return async (question: dns.IQuestion) => {
         const [value, isReused] = await memoizedResolve(question)
         return [value, isReused ? State.Reuse : State.Miss]
@@ -67,6 +74,7 @@ export function startServer({
         )
       , verbose: true
       }, configuredResolve)
+
       return async (question: dns.IQuestion) => {
         const [value, state] = await memoizedResolve(question)
         return [value, go(() => {
@@ -75,21 +83,18 @@ export function startServer({
             case MemoizeState.Miss: return State.Miss
             case MemoizeState.Reuse: return State.Reuse
             case MemoizeState.StaleIfError: return State.StaleIfError
-            case MemoizeState.StaleWhileRevalidate: return State.StaleWhileRevalidate
+            case MemoizeState.StaleWhileRevalidate:
+              return State.StaleWhileRevalidate
             default: throw new Error(`Unknown memoize state: ${state}`)
           }
         })]
       }
     }
 
-    async function configuredResolve(question: dns.IQuestion): Promise<dns.IPacket> {
-      const response = await resolve(dnsServer, question, timeout)
-      if (isEmptyArray(response.answer)) {
-        // 为了正确缓存该函数, 在没有结果时断定为上游解析失败, 抛出错误而不是缓存空响应.
-        throw new NoAnswerError(response)
-      } else {
-        return response
-      }
+    async function configuredResolve(
+      question: dns.IQuestion
+    ): Promise<dns.IPacket> {
+      return await resolve(dnsServer, question, timeout)
     }
   })
 
@@ -104,18 +109,7 @@ export function startServer({
     logger.trace(`${formatHostname(question.name)} ${RecordType[question.type]}`)
 
     const startTime = Date.now()
-    const [err, result] = await getErrorResultAsync(async () => {
-      try {
-        const result = await memoizedResolve(question)
-        return result
-      } catch (err) {
-        if (err instanceof NoAnswerError) {
-          return [err.response, State.Hit] as const
-        } else {
-          throw err
-        }
-      }
-    })
+    const [err, result] = await getErrorResultAsync(() => memoizedResolve(question))
     if (err) {
       logger.error(`${formatHostname(question.name)} ${err}`, getElapsed(startTime))
     } else {
