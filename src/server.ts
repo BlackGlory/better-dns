@@ -4,7 +4,7 @@ import { getErrorResultAsync } from 'return-style'
 import { Logger } from 'extra-logger'
 import { RecordType } from './record-types'
 import { go, isUndefined, isEmptyArray } from '@blackglory/prelude'
-import { memoizeStaleWhileRevalidateAndStaleIfError } from 'extra-memoize'
+import { memoizeStaleWhileRevalidateAndStaleIfError, State as MemoizeState } from 'extra-memoize'
 import {
   ExpirableCacheWithStaleWhileRevalidateAndStaleIfError
 } from '@extra-memoize/memory-cache'
@@ -23,6 +23,14 @@ interface IStartServerOptions {
   staleIfError?: number
 }
 
+enum State {
+  Hit
+, Miss
+, Reuse
+, StaleIfError
+, StaleWhileRevalidate
+}
+
 class NoAnswerError extends CustomError {
   constructor(public readonly response: dns.IPacket) {
     super()
@@ -39,22 +47,40 @@ export function startServer({
 , staleIfError
 }: IStartServerOptions) {
   const server = dns.createServer()
-  const memoizedResolve = go(() => {
+  const memoizedResolve: (question: dns.IQuestion) => Promise<[dns.IPacket, State]> = go(() => {
     if (
       isUndefined(timeToLive) &&
       isUndefined(staleWhileRevalidate) &&
       isUndefined(staleIfError)
     ) {
-      return memoizeStaleWhileRevalidateAndStaleIfError({
+      const memoizedResolve = reusePendingPromise(configuredResolve, { verbose: true })
+      return async (question: dns.IQuestion) => {
+        const [value, isReused] = await memoizedResolve(question)
+        return [value, isReused ? State.Reuse : State.Miss]
+      }
+    } else {
+      const memoizedResolve = memoizeStaleWhileRevalidateAndStaleIfError({
         cache: new ExpirableCacheWithStaleWhileRevalidateAndStaleIfError(
           timeToLive ?? 0
         , staleWhileRevalidate ?? 0
         , staleIfError ?? 0
         )
+      , verbose: true
       }, configuredResolve)
+      return async (question: dns.IQuestion) => {
+        const [value, state] = await memoizedResolve(question)
+        return [value, go(() => {
+          switch (state) {
+            case MemoizeState.Hit: return State.Hit
+            case MemoizeState.Miss: return State.Miss
+            case MemoizeState.Reuse: return State.Reuse
+            case MemoizeState.StaleIfError: return State.StaleIfError
+            case MemoizeState.StaleWhileRevalidate: return State.StaleWhileRevalidate
+            default: throw new Error(`Unknown memoize state: ${state}`)
+          }
+        })]
+      }
     }
-
-    return reusePendingPromise(configuredResolve)
 
     async function configuredResolve(question: dns.IQuestion): Promise<dns.IPacket> {
       const response = await resolve(dnsServer, question, timeout)
@@ -78,24 +104,27 @@ export function startServer({
     logger.trace(`${formatHostname(question.name)} ${RecordType[question.type]}`)
 
     const startTime = Date.now()
-    const [err, response] = await go(async () => {
-      const [err, response] = await getErrorResultAsync(() => memoizedResolve(question))
+    const [err, result]: [Error | undefined, [dns.IPacket, State] | undefined] = await go(async () => {
+      const [err, result] = await getErrorResultAsync(() => memoizedResolve(question))
       if (err && err instanceof NoAnswerError) {
-        return [undefined, err.response]
+        return [undefined, [err.response, State.Hit]]
       } else {
-        return [err, response]
+        return [err, result]
       }
     })
     if (err) {
       logger.error(`${formatHostname(question.name)} ${err}`, getElapsed(startTime))
       return sendResponse()
-    }
-    logger.info(`${formatHostname(question.name)} ${RecordType[question.type]}`, getElapsed(startTime))
+    } else {
+      const [response, state] = result!
+      logger.info(`${formatHostname(question.name)} ${RecordType[question.type]} ${State[state]}`, getElapsed(startTime))
 
-    res.header.rcode = response!.header.rcode
-    res.answer = response!.answer
-    res.authority = response!.authority
-    sendResponse()
+      res.header.rcode = response.header.rcode
+      res.answer = response.answer
+      res.authority = response.authority
+
+      sendResponse()
+    }
 
     function sendResponse() {
       logger.trace(`response: ${JSON.stringify(res)}`)
