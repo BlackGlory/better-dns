@@ -15,6 +15,7 @@ import { reusePendingPromise } from 'extra-promise'
 import chalk from 'chalk'
 import { resolve } from './resolve'
 import { CustomError } from '@blackglory/errors'
+import { NAME_TO_RCODE } from 'native-node-dns-packet'
 
 interface IStartServerOptions {
   port: number
@@ -32,9 +33,10 @@ enum State {
 , Reuse
 , StaleIfError
 , StaleWhileRevalidate
+, Fail
 }
 
-class NoAnswerError extends CustomError {
+class ResolveFailedError extends CustomError {
   constructor(public readonly response: dns.IPacket) {
     super()
   }
@@ -94,7 +96,16 @@ export function startServer({
     async function configuredResolve(
       question: dns.IQuestion
     ): Promise<dns.IPacket> {
-      return await resolve(dnsServer, question, timeout)
+      const res = await resolve(dnsServer, question, timeout)
+
+      // 只缓存响应为NOERROR或NOTFOUND的请求
+      switch (res.header.rcode) {
+        case NAME_TO_RCODE.NOERROR:
+        case NAME_TO_RCODE.NOTFOUND:
+          return res
+        default:
+          throw new ResolveFailedError(res)
+      }
     }
   })
 
@@ -111,10 +122,27 @@ export function startServer({
     const startTime = Date.now()
     const [err, result] = await getErrorResultAsync(() => memoizedResolve(question))
     if (err) {
-      logger.error(`${formatHostname(question.name)} ${err}`, getElapsed(startTime))
+      if (err instanceof ResolveFailedError) {
+        logger.info(
+          `${formatHostname(question.name)} ${RecordType[question.type]} ${State[State.Fail]}`
+        , getElapsed(startTime)
+        )
+
+        res.header.rcode = err.response.header.rcode
+        res.answer = err.response.answer
+        res.authority = err.response.authority
+      } else {
+        logger.error(
+          `${formatHostname(question.name)} ${err}`
+        , getElapsed(startTime)
+        )
+      }
     } else {
       const [response, state] = result
-      logger.info(`${formatHostname(question.name)} ${RecordType[question.type]} ${State[state]}`, getElapsed(startTime))
+      logger.info(
+        `${formatHostname(question.name)} ${RecordType[question.type]} ${State[state]}`
+      , getElapsed(startTime)
+      )
 
       res.header.rcode = response.header.rcode
       res.answer = response.answer
