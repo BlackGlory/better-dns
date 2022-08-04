@@ -104,27 +104,30 @@ export function startServer({
     logger.trace(`${formatHostname(question.name)} ${RecordType[question.type]}`)
 
     const startTime = Date.now()
-    const [err, result]: [Error | undefined, [dns.IPacket, State] | undefined] = await go(async () => {
-      const [err, result] = await getErrorResultAsync(() => memoizedResolve(question))
-      if (err && err instanceof NoAnswerError) {
-        return [undefined, [err.response, State.Hit]]
-      } else {
-        return [err, result]
+    const [err, result] = await getErrorResultAsync(async () => {
+      try {
+        const result = await memoizedResolve(question)
+        return result
+      } catch (err) {
+        if (err instanceof NoAnswerError) {
+          return [err.response, State.Hit] as const
+        } else {
+          throw err
+        }
       }
     })
     if (err) {
       logger.error(`${formatHostname(question.name)} ${err}`, getElapsed(startTime))
-      return sendResponse()
     } else {
-      const [response, state] = result!
+      const [response, state] = result
       logger.info(`${formatHostname(question.name)} ${RecordType[question.type]} ${State[state]}`, getElapsed(startTime))
 
       res.header.rcode = response.header.rcode
       res.answer = response.answer
       res.authority = response.authority
-
-      sendResponse()
     }
+
+    sendResponse()
 
     function sendResponse() {
       logger.trace(`response: ${JSON.stringify(res)}`)
