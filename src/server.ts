@@ -36,7 +36,7 @@ enum State {
 , Fail
 }
 
-class ResolveFailedError extends CustomError {
+class FailedResolution extends CustomError {
   constructor(public readonly response: dns.IPacket) {
     super()
   }
@@ -104,7 +104,7 @@ export function startServer({
         case NAME_TO_RCODE.NOTFOUND:
           return res
         default:
-          throw new ResolveFailedError(res)
+          throw new FailedResolution(res)
       }
     }
   })
@@ -116,13 +116,14 @@ export function startServer({
 
     res.header.rcode = dns.consts.NAME_TO_RCODE.SERVFAIL
 
+    // https://stackoverflow.com/questions/55092830/how-to-perform-dns-lookup-with-multiple-questions
     const question = req.question[0]
     logger.trace(`${formatHostname(question.name)} ${RecordType[question.type]}`)
 
     const startTime = Date.now()
     const [err, result] = await getErrorResultAsync(() => memoizedResolve(question))
     if (err) {
-      if (err instanceof ResolveFailedError) {
+      if (err instanceof FailedResolution) {
         logger.info(
           `${formatHostname(question.name)} ${RecordType[question.type]} ${State[State.Fail]}`
         , getElapsed(startTime)
