@@ -121,12 +121,8 @@ export function startServer({
       res.authority = response.authority
     }
 
-    sendResponse()
-
-    function sendResponse() {
-      logger.trace(`response: ${JSON.stringify(res)}`)
-      res.send()
-    }
+    logger.trace(`response: ${JSON.stringify(res)}`)
+    res.send()
   })
 
   return server.serve(port)
