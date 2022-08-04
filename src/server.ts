@@ -15,7 +15,7 @@ import { reusePendingPromise } from 'extra-promise'
 import chalk from 'chalk'
 import { resolve } from './resolve'
 import { CustomError } from '@blackglory/errors'
-import { NAME_TO_RCODE } from 'native-node-dns-packet'
+import { consts } from 'native-node-dns-packet'
 
 interface IStartServerOptions {
   port: number
@@ -100,8 +100,8 @@ export function startServer({
 
       // 只缓存响应为NOERROR或NOTFOUND的请求
       switch (res.header.rcode) {
-        case NAME_TO_RCODE.NOERROR:
-        case NAME_TO_RCODE.NOTFOUND:
+        case consts.NAME_TO_RCODE.NOERROR:
+        case consts.NAME_TO_RCODE.NOTFOUND:
           return res
         default:
           throw new FailedResolution(res)
