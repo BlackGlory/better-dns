@@ -1,6 +1,5 @@
 import { IServerInfo } from '@utils/parse-server-info'
 import * as dns from 'native-node-dns'
-import { getErrorResultAsync } from 'return-style'
 import { Logger } from 'extra-logger'
 import { RecordType } from './record-types'
 import { go, isUndefined, isEmptyArray } from '@blackglory/prelude'
@@ -54,6 +53,7 @@ export function startServer({
       isUndefined(staleIfError)
     ) {
       const memoizedResolve = reusePendingPromise(configuredResolve, { verbose: true })
+
       return async (question: dns.IQuestion) => {
         const [value, isReused] = await memoizedResolve(question)
         return [value, isReused ? State.Reuse : State.Miss]
@@ -67,6 +67,7 @@ export function startServer({
         )
       , verbose: true
       }, configuredResolve)
+
       return async (question: dns.IQuestion) => {
         const [value, state] = await memoizedResolve(question)
         return [value, go(() => {
@@ -104,27 +105,28 @@ export function startServer({
     logger.trace(`${formatHostname(question.name)} ${RecordType[question.type]}`)
 
     const startTime = Date.now()
-    const [err, result]: [Error | undefined, [dns.IPacket, State] | undefined] = await go(async () => {
-      const [err, result] = await getErrorResultAsync(() => memoizedResolve(question))
-      if (err && err instanceof NoAnswerError) {
-        return [undefined, [err.response, State.Hit]]
-      } else {
-        return [err, result]
-      }
-    })
-    if (err) {
-      logger.error(`${formatHostname(question.name)} ${err}`, getElapsed(startTime))
-      return sendResponse()
-    } else {
-      const [response, state] = result!
+    try {
+      const [response, state] = await go(async () => {
+        try {
+          return memoizedResolve(question)
+        } catch (err) {
+          if (err instanceof NoAnswerError) {
+            return [err.response, State.Hit]
+          } else {
+            throw err
+          }
+        }
+      })
       logger.info(`${formatHostname(question.name)} ${RecordType[question.type]} ${State[state]}`, getElapsed(startTime))
 
       res.header.rcode = response.header.rcode
       res.answer = response.answer
       res.authority = response.authority
-
-      sendResponse()
+    } catch (err) {
+      logger.error(`${formatHostname(question.name)} ${err}`, getElapsed(startTime))
     }
+
+    sendResponse()
 
     function sendResponse() {
       logger.trace(`response: ${JSON.stringify(res)}`)
