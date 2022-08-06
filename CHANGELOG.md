@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.1.11](https://github.com/BlackGlory/cacheable-dns/compare/v0.1.10...v0.1.11) (2022-08-06)
+
+
+### Features
+
+* add disk cache support ([7add1af](https://github.com/BlackGlory/cacheable-dns/commit/7add1afa7023789a774b196b11ddc0f8925f4229))
+
 ### [0.1.10](https://github.com/BlackGlory/cacheable-dns/compare/v0.1.9...v0.1.10) (2022-08-05)
 
 ### [0.1.9](https://github.com/BlackGlory/cacheable-dns/compare/v0.1.8...v0.1.9) (2022-08-04)
