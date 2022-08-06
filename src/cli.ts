@@ -18,6 +18,7 @@ program
   .option('--time-to-live [seconds]')
   .option('--stale-while-revalidate [seconds]')
   .option('--stale-if-error [seconds]')
+  .option('--cache [filename]', 'The filename of disk cache, memory cache is used by default')
   .option('--log [level]', '', 'info')
   .argument('<server>')
   .action(async (server: string) => {
@@ -35,6 +36,7 @@ program
     , timeToLive: options.timeToLive
     , staleWhileRevalidate: options.staleWhileRevalidate
     , staleIfError: options.staleIfError
+    , cacheFilename: options.cacheFilename
     })
   })
   .parse()
@@ -46,6 +48,7 @@ function getOptions() {
     timeToLive?: string
     staleWhileRevalidate?: string
     staleIfError?: string
+    cache?: string
     log: string
   }>()
 
@@ -82,6 +85,8 @@ function getOptions() {
 
   const logLevel = stringToLevel(opts.log, Level.Info)
 
+  const cacheFilename = opts.cache
+
   return {
     port
   , timeout
@@ -89,5 +94,6 @@ function getOptions() {
   , staleWhileRevalidate
   , staleIfError
   , logLevel
+  , cacheFilename
   }
 }

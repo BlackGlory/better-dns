@@ -11,11 +11,15 @@ import {
 import {
   ExpirableCacheWithStaleWhileRevalidateAndStaleIfError
 } from '@extra-memoize/memory-cache'
+import {
+  StaleWhileRevalidateAndStaleIfErrorDiskCache
+} from '@extra-memoize/extra-disk-cache'
 import { reusePendingPromise } from 'extra-promise'
 import chalk from 'chalk'
 import { resolve } from './resolve'
 import { CustomError } from '@blackglory/errors'
 import { consts } from 'native-node-dns-packet'
+import { DiskCache } from 'extra-disk-cache'
 
 interface IStartServerOptions {
   port: number
@@ -25,6 +29,7 @@ interface IStartServerOptions {
   timeToLive?: number
   staleWhileRevalidate?: number
   staleIfError?: number
+  cacheFilename?: string
 }
 
 enum State {
@@ -42,7 +47,7 @@ class FailedResolution extends CustomError {
   }
 }
 
-export function startServer({
+export async function startServer({
   logger
 , port
 , timeout
@@ -50,9 +55,10 @@ export function startServer({
 , timeToLive
 , staleWhileRevalidate
 , staleIfError
-}: IStartServerOptions) {
+, cacheFilename
+}: IStartServerOptions): Promise<void> {
   const server = dns.createServer()
-  const memoizedResolve: (question: dns.IQuestion) => Promise<[dns.IPacket, State]> = go(() => {
+  const memoizedResolve: (question: dns.IQuestion) => Promise<[dns.IPacket, State]> = await go(async () => {
     if (
       isUndefined(timeToLive) &&
       isUndefined(staleWhileRevalidate) &&
@@ -69,11 +75,18 @@ export function startServer({
       }
     } else {
       const memoizedResolve = memoizeStaleWhileRevalidateAndStaleIfError({
-        cache: new ExpirableCacheWithStaleWhileRevalidateAndStaleIfError(
-          timeToLive ?? 0
-        , staleWhileRevalidate ?? 0
-        , staleIfError ?? 0
-        )
+        cache: cacheFilename
+          ? new StaleWhileRevalidateAndStaleIfErrorDiskCache<dns.IPacket>(
+              await DiskCache.create(cacheFilename)
+            , timeToLive ?? 0
+            , staleWhileRevalidate ?? 0
+            , staleIfError ?? 0
+            )
+          : new ExpirableCacheWithStaleWhileRevalidateAndStaleIfError<dns.IPacket>(
+              timeToLive ?? 0
+            , staleWhileRevalidate ?? 0
+            , staleIfError ?? 0
+            )
       , verbose: true
       }, configuredResolve)
 

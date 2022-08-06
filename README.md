@@ -17,6 +17,7 @@ Options:
   --time-to-live [seconds]
   --stale-while-revalidate [seconds]
   --stale-if-error [seconds]
-  --log [level]                        (default: "info")       
+  --cache [filename]                  The filename of disk cache, memory cache is used by default
+  --log [level]                        (default: "info")
   -h, --help                          display help for command
 ```
