@@ -2668,10 +2668,10 @@ extglob@^2.0.4:
     snapdragon "^0.8.1"
     to-regex "^3.0.1"
 
-extra-disk-cache@^0.8.2:
-  version "0.8.2"
-  resolved "https://registry.yarnpkg.com/extra-disk-cache/-/extra-disk-cache-0.8.2.tgz#6d39cd80b0834f0c1ed4dab3d3e15d9f6083d362"
-  integrity sha512-dCqM5iFI8M4fVA0TwybWgoovOs2YTXmDYiW+DHWrMzcbKSzyTLUR5Z6XxDV16bhBeXt+v6l0CliyNXCQJX5wzQ==
+extra-disk-cache@^0.8.4:
+  version "0.8.4"
+  resolved "https://registry.yarnpkg.com/extra-disk-cache/-/extra-disk-cache-0.8.4.tgz#b8722c2f544e9edda2f343dc657b2016f5ba00e7"
+  integrity sha512-app2jLQ7/eFvRv+8PZziaONWVpuk200FOOFUS3TroCJx4PDkxA6qiHFdL3ULD2RJ6U1rgYJmBG0W5aFW+QUHCg==
   dependencies:
     "@blackglory/better-sqlite3-migrations" "^0.1.13"
     "@blackglory/prelude" "^0.1.3"
