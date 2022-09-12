@@ -76,7 +76,7 @@ export async function startServer({
     } else {
       const memoizedResolve = memoizeStaleWhileRevalidateAndStaleIfError({
         cache: cacheFilename
-          ? new StaleWhileRevalidateAndStaleIfErrorDiskCache<dns.IPacket>(
+          ? new StaleWhileRevalidateAndStaleIfErrorDiskCache(
               await DiskCache.create(cacheFilename)
             , timeToLive ?? 0
             , staleWhileRevalidate ?? 0
