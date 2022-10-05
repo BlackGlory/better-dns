@@ -110,13 +110,10 @@ export async function startServer({
     ): Promise<dns.IPacket> {
       const res = await resolve(dnsServer, question, timeout)
 
-      // 只缓存响应为NOERROR或NOTFOUND的请求
+      // 只缓存响应为NOERROR的请求
       switch (res.header.rcode) {
-        case consts.NAME_TO_RCODE.NOERROR:
-        case consts.NAME_TO_RCODE.NOTFOUND:
-          return res
-        default:
-          throw new FailedResolution(res)
+        case consts.NAME_TO_RCODE.NOERROR: return res
+        default: throw new FailedResolution(res)
       }
     }
   })
