@@ -98,8 +98,7 @@ export async function startServer({
             case MemoizeState.Miss: return State.Miss
             case MemoizeState.Reuse: return State.Reuse
             case MemoizeState.StaleIfError: return State.StaleIfError
-            case MemoizeState.StaleWhileRevalidate:
-              return State.StaleWhileRevalidate
+            case MemoizeState.StaleWhileRevalidate: return State.StaleWhileRevalidate
             default: throw new Error(`Unknown memoize state: ${state}`)
           }
         })]
