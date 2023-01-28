@@ -1,10 +1,19 @@
 #!/usr/bin/env node
 import { program } from 'commander'
-import { startServer } from './server'
 import { assert } from '@blackglory/errors'
 import { Level, Logger, TerminalTransport, stringToLevel } from 'extra-logger'
 import { parseServerInfo } from '@utils/parse-server-info'
-import { go } from '@blackglory/prelude'
+import { startServer } from './server'
+
+interface IOptions {
+  port: string
+  timeout: string
+  timeToLive?: string
+  staleWhileRevalidate?: string
+  staleIfError?: string
+  cache?: string
+  log: string
+}
 
 const { name, version, description } = require('../package.json')
 process.title = name
@@ -22,78 +31,76 @@ program
   .option('--log [level]', '', 'info')
   .argument('<server>')
   .action(async (server: string) => {
-    const options = getOptions()
+    const options = program.opts<IOptions>()
+    const logLevel = getLogLevel(options)
+    const timeout = getTimeout(options)
+    const port = getPort(options)
+    const timeToLive = getTimeToLive(options)
+    const staleWhileRevalidate = getStaleWhileRevalidate(options)
+    const staleIfError = getStaleIfError(options)
+    const cacheFilename = getCacheFilename(options)
+    const dnsServer = parseServerInfo(server)
+
     const logger = new Logger({
-      level: options.logLevel
+      level: logLevel
     , transport: new TerminalTransport({})
     })
 
     startServer({
       logger
-    , dnsServer: parseServerInfo(server)
-    , timeout: options.timeout
-    , port: options.port
-    , timeToLive: options.timeToLive
-    , staleWhileRevalidate: options.staleWhileRevalidate
-    , staleIfError: options.staleIfError
-    , cacheFilename: options.cacheFilename
+    , dnsServer
+    , timeout
+    , port
+    , timeToLive
+    , staleWhileRevalidate
+    , staleIfError
+    , cacheFilename
     })
   })
   .parse()
 
-function getOptions() {
-  const opts = program.opts<{
-    port: string
-    timeout: string
-    timeToLive?: string
-    staleWhileRevalidate?: string
-    staleIfError?: string
-    cache?: string
-    log: string
-  }>()
+function getPort(options: IOptions): number {
+  assert(/^\d+$/.test(options.port), 'The parameter port must be integer')
 
-  assert(/^\d+$/.test(opts.port), 'The parameter port must be integer')
-  const port: number = Number.parseInt(opts.port, 10)
+  return Number.parseInt(options.port, 10)
+}
 
-  assert(/^\d+$/.test(opts.timeout), 'The parameter timeout must be integer')
-  const timeout: number = Number.parseInt(opts.port, 10) * 1000
+function getTimeout(options: IOptions): number {
+  assert(/^\d+$/.test(options.timeout), 'The parameter timeout must be integer')
 
-  const timeToLive: number | undefined = go(() => {
-    if (opts.timeToLive) {
-      assert(/^\d+$/.test(opts.timeToLive), 'The parameter timeout must be integer')
-      return Number.parseInt(opts.timeToLive, 10) * 1000
-    } else {
-      return undefined
-    }
-  })
+  return Number.parseInt(options.port, 10) * 1000
+}
 
-  const staleWhileRevalidate: number | undefined = go(() => {
-    if (opts.staleWhileRevalidate) {
-      return Number.parseInt(opts.staleWhileRevalidate, 10) * 1000
-    } else {
-      return undefined
-    }
-  })
+function getTimeToLive(options: IOptions): number | undefined {
+  if (options.timeToLive) {
+    assert(/^\d+$/.test(options.timeToLive), 'The parameter timeout must be integer')
 
-  const staleIfError: number | undefined = go(() => {
-    if (opts.staleIfError) {
-      return Number.parseInt(opts.staleIfError, 10) * 1000
-    } else {
-      return undefined
-    }
-  })
-
-  const logLevel = stringToLevel(opts.log, Level.Info)
-
-  const cacheFilename = opts.cache
-
-  return {
-    port
-  , timeout
-  , timeToLive
-  , staleWhileRevalidate
-  , staleIfError
-  , logLevel
-  , cacheFilename
+    return Number.parseInt(options.timeToLive, 10) * 1000
+  } else {
+    return undefined
   }
+}
+
+function getStaleWhileRevalidate(options: IOptions): number | undefined {
+  if (options.staleWhileRevalidate) {
+    return Number.parseInt(options.staleWhileRevalidate, 10) * 1000
+  } else {
+    return undefined
+  }
+}
+
+function getStaleIfError(options: IOptions): number | undefined {
+  if (options.staleIfError) {
+    return Number.parseInt(options.staleIfError, 10) * 1000
+  } else {
+    return undefined
+  }
+}
+
+function getLogLevel(options: IOptions): Level {
+  return stringToLevel(options.log, Level.Info)
+}
+
+function getCacheFilename(options: IOptions): string | undefined {
+  return options.cache
 }
