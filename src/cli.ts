@@ -22,13 +22,16 @@ program
   .name(name)
   .version(version)
   .description(description)
-  .option('--timeout [seconds]', '', '30')
-  .option('--port [port]', '', '53')
-  .option('--time-to-live [seconds]')
-  .option('--stale-while-revalidate [seconds]')
-  .option('--stale-if-error [seconds]')
-  .option('--cache [filename]', 'The filename of disk cache, memory cache is used by default')
-  .option('--log [level]', '', 'info')
+  .option('--timeout <seconds>', '', '30')
+  .option('--port <port>', '', '53')
+  .option('--time-to-live <seconds>')
+  .option('--stale-while-revalidate <seconds>')
+  .option('--stale-if-error <seconds>')
+  .option(
+    '--cache <filename>'
+  , 'The filename of disk cache, memory cache is used by default'
+  )
+  .option('--log <level>', '', 'info')
   .argument('<server>')
   .action(async (server: string) => {
     const options = program.opts<IOptions>()
