@@ -1,4 +1,43 @@
 declare module 'native-node-dns-packet' {
+  export class Packet {
+    header: IHeader
+    question: IQuestion[]
+    answer: IResourceRecord[]
+    authority: IResourceRecord[]
+    additional: IResourceRecord[]
+
+    write(buff: unknown, packet: unknown): unknown
+    parse(msg: unknown): unknown
+  }
+
+  export interface IHeader {
+    aa: number
+    id: number
+    opcode: number
+    qr: number
+    ra: number
+    rcode: NAME_TO_RCODE
+    rd: number
+    res1: number
+    res2: number
+    res3: number
+    tc: number
+  }
+
+  export interface IQuestion {
+    name: string
+    type: NAME_TO_QTYPE
+    class: number
+  }
+
+  export interface IResourceRecord {
+    name: string
+    type: number
+    class: number
+    ttl: number
+    address: string
+  }
+
   export const consts = {
     NAME_TO_RCODE
   , NAME_TO_QTYPE

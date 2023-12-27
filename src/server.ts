@@ -1,5 +1,6 @@
 import { IServerInfo } from '@utils/parse-server-info.js'
 import * as dns from 'native-node-dns'
+import { IQuestion } from 'native-node-dns-packet'
 import { getErrorResultAsync } from 'return-style'
 import { Logger } from 'extra-logger'
 import { RecordType } from './record-types.js'
@@ -58,7 +59,7 @@ export async function startServer({
 , cacheFilename
 }: IStartServerOptions): Promise<void> {
   const server = dns.createServer()
-  const memoizedResolve: (question: dns.IQuestion) => Promise<[dns.IPacket, State]> = await go(async () => {
+  const memoizedResolve: (question: IQuestion) => Promise<[dns.IPacket, State]> = await go(async () => {
     if (
       isUndefined(timeToLive) &&
       isUndefined(staleWhileRevalidate) &&
@@ -69,7 +70,7 @@ export async function startServer({
       , { verbose: true }
       )
 
-      return async (question: dns.IQuestion) => {
+      return async (question: IQuestion) => {
         const [value, isReused] = await memoizedResolve(question)
         return [value, isReused ? State.Reuse : State.Miss]
       }
@@ -101,7 +102,7 @@ export async function startServer({
       , verbose: true
       }, configuredResolve)
 
-      return async (question: dns.IQuestion) => {
+      return async (question: IQuestion) => {
         const [value, state] = await memoizedResolve(question)
         return [value, go(() => {
           switch (state) {
@@ -117,7 +118,7 @@ export async function startServer({
     }
 
     async function configuredResolve(
-      question: dns.IQuestion
+      question: IQuestion
     ): Promise<dns.IPacket> {
       const res = await resolve(dnsServer, question, timeout)
 
