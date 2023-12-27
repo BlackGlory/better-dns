@@ -138,14 +138,14 @@ export async function startServer({
 
     // https://stackoverflow.com/questions/55092830/how-to-perform-dns-lookup-with-multiple-questions
     const question = req.question[0]
-    logger.trace(`${formatHostname(question.name)} ${RecordType[question.type]}`)
+    logger.trace(`${formatHostname(question.name)} ${formatRecordType(question.type)}`)
 
     const startTime = Date.now()
     const [err, result] = await getErrorResultAsync(() => memoizedResolve(question))
     if (err) {
       if (err instanceof FailedResolution) {
         logger.info(
-          `${formatHostname(question.name)} ${RecordType[question.type]} ${State[State.Fail]}`
+          `${formatHostname(question.name)} ${formatRecordType(question.type)} ${State[State.Fail]}`
         , getElapsed(startTime)
         )
 
@@ -161,7 +161,7 @@ export async function startServer({
     } else {
       const [response, state] = result
       logger.info(
-        `${formatHostname(question.name)} ${RecordType[question.type]} ${State[state]}`
+        `${formatHostname(question.name)} ${formatRecordType(question.type)} ${State[state]}`
       , getElapsed(startTime)
       )
 
@@ -183,4 +183,8 @@ function formatHostname(hostname: string): string {
 
 function getElapsed(startTime: number): number {
   return Date.now() - startTime
+}
+
+function formatRecordType(recordType: number): string {
+  return RecordType[recordType] ?? `Unknown(${recordType})`
 }
