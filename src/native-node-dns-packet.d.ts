@@ -1,4 +1,6 @@
 declare module 'native-node-dns-packet' {
+  import BufferCursor from 'buffercursor'
+
   export class Packet {
     header: IHeader
     question: IQuestion[]
@@ -35,7 +37,9 @@ declare module 'native-node-dns-packet' {
     type: number
     class: number
     ttl: number
-    address: string
+
+    address?: string
+    data?: string | BufferCursor
   }
 
   export const consts = {
