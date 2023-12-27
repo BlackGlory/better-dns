@@ -6,8 +6,8 @@ declare module 'native-node-dns-packet' {
     authority: IResourceRecord[]
     additional: IResourceRecord[]
 
-    write(buff: unknown, packet: unknown): unknown
-    parse(msg: unknown): unknown
+    write(buffer: Buffer, packet: Packet): unknown
+    parse(buffer: Buffer): Packet
   }
 
   export interface IHeader {
