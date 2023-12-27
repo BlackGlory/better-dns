@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.2.0](https://github.com/BlackGlory/cacheable-dns/compare/v0.1.18...v0.2.0) (2023-12-27)
+
+
+### ⚠ BREAKING CHANGES
+
+* The minimal version of Node.js is v18.17.0
+
+* upgrade dependencies ([debf94b](https://github.com/BlackGlory/cacheable-dns/commit/debf94b7e58c2dc0894f0c2d9dc607bca34f530c))
+
 ### [0.1.18](https://github.com/BlackGlory/cacheable-dns/compare/v0.1.17...v0.1.18) (2023-01-28)
 
 
