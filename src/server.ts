@@ -1,8 +1,8 @@
-import { IServerInfo } from '@utils/parse-server-info'
+import { IServerInfo } from '@utils/parse-server-info.js'
 import * as dns from 'native-node-dns'
 import { getErrorResultAsync } from 'return-style'
 import { Logger } from 'extra-logger'
-import { RecordType } from './record-types'
+import { RecordType } from './record-types.js'
 import { go, isUndefined } from '@blackglory/prelude'
 import {
   memoizeStaleWhileRevalidateAndStaleIfError
@@ -14,12 +14,12 @@ import {
 import {
   StaleWhileRevalidateAndStaleIfErrorDiskCache
 } from '@extra-memoize/extra-disk-cache'
-import { reusePendingPromise } from 'extra-promise'
+import { reusePendingPromises } from 'extra-promise'
 import chalk from 'chalk'
-import { resolve } from './resolve'
+import { resolve } from './resolve.js'
 import { CustomError } from '@blackglory/errors'
 import { consts } from 'native-node-dns-packet'
-import { DiskCache } from 'extra-disk-cache'
+import { DiskCache, DiskCacheView, PassthroughKeyConverter } from 'extra-disk-cache'
 
 interface IStartServerOptions {
   port: number
@@ -64,7 +64,7 @@ export async function startServer({
       isUndefined(staleWhileRevalidate) &&
       isUndefined(staleIfError)
     ) {
-      const memoizedResolve = reusePendingPromise(
+      const memoizedResolve = reusePendingPromises(
         configuredResolve
       , { verbose: true }
       )
@@ -77,7 +77,18 @@ export async function startServer({
       const memoizedResolve = memoizeStaleWhileRevalidateAndStaleIfError({
         cache: cacheFilename
           ? new StaleWhileRevalidateAndStaleIfErrorDiskCache(
-              await DiskCache.create(cacheFilename)
+              new DiskCacheView<string, dns.IPacket>(
+                await DiskCache.create(cacheFilename)
+              , new PassthroughKeyConverter()
+              , {
+                  toBuffer(value: dns.IPacket): Buffer {
+                    return Buffer.from(JSON.stringify(value))
+                  }
+                , fromBuffer(buffer: Buffer): dns.IPacket {
+                    return JSON.parse(buffer.toString())
+                  }
+                }
+              )
             , timeToLive ?? 0
             , staleWhileRevalidate ?? 0
             , staleIfError ?? 0

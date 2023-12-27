@@ -2,8 +2,9 @@
 import { program } from 'commander'
 import { assert } from '@blackglory/errors'
 import { Level, Logger, TerminalTransport, stringToLevel } from 'extra-logger'
-import { parseServerInfo } from '@utils/parse-server-info'
-import { startServer } from './server'
+import { parseServerInfo } from '@utils/parse-server-info.js'
+import { startServer } from './server.js'
+import { name, version, description } from '@utils/package.js'
 
 interface IOptions {
   port: string
@@ -15,7 +16,6 @@ interface IOptions {
   log: string
 }
 
-const { name, version, description } = require('../package.json')
 process.title = name
 
 program

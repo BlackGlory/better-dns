@@ -5,71 +5,70 @@
   "keywords": [
     "dns"
   ],
-  "bin": "dist/cli.cjs",
+  "bin": "lib/cli.js",
   "files": [
-    "dist"
+    "lib"
   ],
+  "type": "module",
+  "engines": {
+    "node": ">=18.17.0"
+  },
   "repository": "git@github.com:BlackGlory/cacheable-dns.git",
   "author": "BlackGlory <woshenmedoubuzhidao@blackglory.me>",
   "license": "MIT",
   "scripts": {
+    "prepare": "ts-patch install -s",
     "deduplicate": "yarn-deduplicate",
+    "prepublishOnly": "run-s postinstall prepare clean build",
     "postinstall": "patch-package",
     "lint": "eslint --ext .js,.jsx,.ts,.tsx --quiet src",
-    "test": "jest --config jest.config.js",
-    "test:debug": "node --inspect-brk node_modules/.bin/jest --runInBand",
-    "test:coverage": "jest --coverage --config jest.config.js",
+    "test": "vitest --run",
     "clean": "rimraf lib dist",
-    "build": "run-s build:*",
-    "build:compile": "tsc --project tsconfig.build.json",
-    "build:patch": "tscpaths --project tsconfig.build.json --src ./src --out ./lib",
-    "bundle": "webpack --stats-error-details",
-    "smoke": "node dist/cli.cjs --help",
-    "prepublishOnly": "run-s postinstall clean build bundle",
+    "build": "tsc --project tsconfig.build.json",
+    "smoke": "node lib/cli.js --help",
     "release": "standard-version"
   },
   "husky": {
     "hooks": {
-      "pre-commit": "run-s postinstall clean lint build bundle smoke",
+      "pre-commit": "run-s postinstall prepare clean lint build smoke",
       "commit-msg": "commitlint --env HUSKY_GIT_PARAMS"
     }
   },
   "devDependencies": {
-    "@commitlint/cli": "^17.1.2",
-    "@commitlint/config-conventional": "^17.1.0",
-    "@types/jest": "^27.4.1",
-    "@types/node": "14",
-    "@typescript-eslint/eslint-plugin": "^5.39.0",
-    "@typescript-eslint/parser": "^5.39.0",
-    "eslint": "^8.24.0",
+    "@commitlint/cli": "^18.4.3",
+    "@commitlint/config-conventional": "^18.4.3",
+    "@types/node": "18",
+    "@typescript-eslint/eslint-plugin": "^6.16.0",
+    "@typescript-eslint/parser": "^6.16.0",
+    "eslint": "^8.56.0",
     "husky": "4",
-    "jest": "^27.5.1",
     "npm-run-all": "^4.1.5",
-    "rimraf": "^3.0.2",
+    "rimraf": "^5.0.5",
     "standard-version": "^9.5.0",
-    "ts-jest": "^27.1.4",
-    "tsconfig-paths": "^4.1.0",
-    "tscpaths": "^0.0.9",
-    "typescript": "^4.8.3",
-    "webpack": "^5.74.0",
-    "webpack-cli": "^4.10.0",
-    "webpack-shebang-plugin": "^1.1.8"
+    "ts-patch": "^3.1.1",
+    "typescript": "^5.3.3",
+    "typescript-transform-paths": "^3.4.6",
+    "vite": "^5.0.10",
+    "vite-tsconfig-paths": "^4.2.2",
+    "vitest": "^1.1.0",
+    "yarn-deduplicate": "^6.0.2"
   },
   "dependencies": {
-    "@blackglory/errors": "^2.2.2",
-    "@blackglory/prelude": "^0.1.5",
-    "@extra-memoize/extra-disk-cache": "^0.6.4",
-    "@extra-memoize/memory-cache": "^0.2.4",
-    "chalk": "^4.1.2",
-    "commander": "^9.4.1",
-    "extra-disk-cache": "^0.8.4",
-    "extra-logger": "^0.6.9",
-    "extra-memoize": "^0.9.1",
-    "extra-promise": "^3.2.2",
-    "iterable-operator": "^1.2.1",
+    "@blackglory/errors": "^3.0.3",
+    "@blackglory/prelude": "^0.3.4",
+    "@extra-memoize/extra-disk-cache": "^0.8.2",
+    "@extra-memoize/memory-cache": "^0.2.10",
+    "chalk": "^5.3.0",
+    "commander": "^11.1.0",
+    "extra-disk-cache": "^0.11.2",
+    "extra-filesystem": "^0.5.1",
+    "extra-logger": "^0.7.2",
+    "extra-memoize": "^0.9.3",
+    "extra-promise": "^6.0.8",
+    "iterable-operator": "^4.0.6",
     "native-node-dns": "0.7.6",
     "native-node-dns-packet": "0.1.5",
-    "patch-package": "^6.4.7",
-    "return-style": "^1.0.0"
+    "patch-package": "^8.0.0",
+    "return-style": "^3.0.1"
   }
 }

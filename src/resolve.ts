@@ -1,4 +1,4 @@
-import { IServerInfo } from '@utils/parse-server-info'
+import { IServerInfo } from '@utils/parse-server-info.js'
 import * as dns from 'native-node-dns'
 
 export function resolve(
