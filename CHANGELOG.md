@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.3.0](https://github.com/BlackGlory/cacheable-dns/compare/v0.2.0...v0.3.0) (2023-12-28)
+
+
+### ⚠ BREAKING CHANGES
+
+* Since the cache format has changed, you need to delete the original `cache.db` file.
+
+### Bug Fixes
+
+* buf.copy is not a function (close [#1](https://github.com/BlackGlory/cacheable-dns/issues/1)) ([2fd30f2](https://github.com/BlackGlory/cacheable-dns/commit/2fd30f2566db9d46c6c14815c6081a11bcf1779f))
+* cache ([0d59a6e](https://github.com/BlackGlory/cacheable-dns/commit/0d59a6e85d41ff344ec1d7401bd9a245df229d16))
+
 ## [0.2.0](https://github.com/BlackGlory/cacheable-dns/compare/v0.1.18...v0.2.0) (2023-12-27)
 
 
