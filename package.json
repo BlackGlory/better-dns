@@ -58,6 +58,8 @@
     "@blackglory/prelude": "^0.3.4",
     "@extra-memoize/extra-disk-cache": "^0.8.2",
     "@extra-memoize/memory-cache": "^0.2.10",
+    "brave-json": "^0.2.0",
+    "buffercursor": "^0.0.12",
     "chalk": "^5.3.0",
     "commander": "^11.1.0",
     "extra-disk-cache": "^0.11.2",

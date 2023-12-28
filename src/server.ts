@@ -1,6 +1,6 @@
 import { IServerInfo } from '@utils/parse-server-info.js'
 import * as dns from 'native-node-dns'
-import { IQuestion } from 'native-node-dns-packet'
+import { IHeader, IQuestion, IResourceRecord } from 'native-node-dns-packet'
 import { getErrorResultAsync } from 'return-style'
 import { Logger } from 'extra-logger'
 import { RecordType } from './record-types.js'
@@ -21,6 +21,8 @@ import { resolve } from './resolve.js'
 import { CustomError } from '@blackglory/errors'
 import { consts } from 'native-node-dns-packet'
 import { DiskCache, DiskCacheView, PassthroughKeyConverter } from 'extra-disk-cache'
+import { BraveJSON, IConverter } from 'brave-json'
+import BufferCursor from 'buffercursor'
 
 interface IStartServerOptions {
   port: number
@@ -48,6 +50,14 @@ class FailedResolution extends CustomError {
   }
 }
 
+interface IPacketLite {
+  header: IHeader
+  question: IQuestion[]
+  answer: IResourceRecord[]
+  authority: IResourceRecord[]
+  additional: IResourceRecord[]
+}
+
 export async function startServer({
   logger
 , port
@@ -59,7 +69,7 @@ export async function startServer({
 , cacheFilename
 }: IStartServerOptions): Promise<void> {
   const server = dns.createServer()
-  const memoizedResolve: (question: IQuestion) => Promise<[dns.IPacket, State]> = await go(async () => {
+  const memoizedResolve: (question: IQuestion) => Promise<[IPacketLite, State]> = await go(async () => {
     if (
       isUndefined(timeToLive) &&
       isUndefined(staleWhileRevalidate) &&
@@ -75,19 +85,50 @@ export async function startServer({
         return [value, isReused ? State.Reuse : State.Miss]
       }
     } else {
+      const converter: IConverter<
+        undefined | BufferCursor
+      , | [type: 'undefined', value: null]
+        | [type: 'BufferCursor', { pos: number, noAssert: boolean, buffer: string }]
+      > = {
+        toJSON(value) {
+          if (isUndefined(value)) {
+            return ['undefined', null]
+          } else if (value instanceof BufferCursor) {
+            return ['BufferCursor', {
+              pos: value._pos
+            , noAssert: value._noAssert
+            , buffer: value.buffer.toString()
+            }]
+          }
+
+          throw value
+        }
+      , fromJSON([type, value]) {
+          switch (type) {
+            case 'undefined': return undefined
+            case 'BufferCursor': {
+              const cursor = new BufferCursor(
+                Buffer.from(value.buffer)
+              , value.noAssert
+              )
+              cursor.seek(value.pos)
+              return cursor
+            }
+            default: throw [type, value]
+          }
+        }
+      }
+      const braveJSON = new BraveJSON(converter)
+
       const memoizedResolve = memoizeStaleWhileRevalidateAndStaleIfError({
         cache: cacheFilename
           ? new StaleWhileRevalidateAndStaleIfErrorDiskCache(
-              new DiskCacheView<string, dns.IPacket>(
+              new DiskCacheView<string, IPacketLite>(
                 await DiskCache.create(cacheFilename)
               , new PassthroughKeyConverter()
               , {
-                  toBuffer(value: dns.IPacket): Buffer {
-                    return Buffer.from(JSON.stringify(value))
-                  }
-                , fromBuffer(buffer: Buffer): dns.IPacket {
-                    return JSON.parse(buffer.toString())
-                  }
+                  toBuffer: value => Buffer.from(braveJSON.stringify(value))
+                , fromBuffer: buffer => braveJSON.parse(buffer.toString())
                 }
               )
             , timeToLive ?? 0

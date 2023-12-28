@@ -2,6 +2,11 @@ declare module 'buffercursor' {
   export default class BufferCursor {
     constructor(buffer: Buffer, noAssert: boolean = true)
 
+    _pos: number
+    _noAssert: boolean
+    buffer: Buffer
+    length: number
+
     seek(pos: number): this
     eof(): boolean
     toByteArray(method: string): number[]
