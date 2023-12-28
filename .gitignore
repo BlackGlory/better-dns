@@ -62,4 +62,4 @@ lib
 dist
 
 # Files
-hosts.txt
+cache.db

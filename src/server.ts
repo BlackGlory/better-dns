@@ -101,7 +101,7 @@ export async function startServer({
             }]
           }
 
-          throw value
+          throw new Error(`Unhandled raw ${value}`)
         }
       , fromJSON([type, value]) {
           switch (type) {
@@ -114,7 +114,7 @@ export async function startServer({
               cursor.seek(value.pos)
               return cursor
             }
-            default: throw [type, value]
+            default: throw new Error(`Unhandled type ${type}`)
           }
         }
       }
@@ -127,7 +127,16 @@ export async function startServer({
                 await DiskCache.create(cacheFilename)
               , new PassthroughKeyConverter()
               , {
-                  toBuffer: value => Buffer.from(braveJSON.stringify(value))
+                  toBuffer: value => {
+                    const packet: IPacketLite = {
+                      header: value.header
+                    , question: value.question
+                    , answer: value.answer
+                    , authority: value.authority
+                    , additional: value.additional
+                    }
+                    return Buffer.from(braveJSON.stringify(packet))
+                  }
                 , fromBuffer: buffer => braveJSON.parse(buffer.toString())
                 }
               )
