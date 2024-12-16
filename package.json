@@ -7,7 +7,8 @@
   ],
   "bin": "lib/cli.js",
   "files": [
-    "lib"
+    "lib",
+    "patches"
   ],
   "type": "module",
   "engines": {
