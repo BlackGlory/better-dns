@@ -49,7 +49,7 @@ program
     , transport: new TerminalTransport({})
     })
 
-    startServer({
+    await startServer({
       logger
     , dnsServer
     , timeout
