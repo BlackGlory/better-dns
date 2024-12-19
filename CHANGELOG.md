@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.4.0](https://github.com/BlackGlory/cacheable-dns/compare/v0.3.3...v0.4.0) (2024-12-19)
+
+
+### ⚠ BREAKING CHANGES
+
+* Since the cache format has changed, you need to delete the old cache file.
+
+* replace native-node-dnes with extra-dns ([e814e5f](https://github.com/BlackGlory/cacheable-dns/commit/e814e5fcaab29649192b3756af93225951f52251))
+
 ### [0.3.3](https://github.com/BlackGlory/cacheable-dns/compare/v0.3.2...v0.3.3) (2024-12-16)
 
 
