@@ -14,7 +14,7 @@ import { DiskCache, DiskCacheView, PassthroughKeyConverter } from 'extra-disk-ca
 import { BraveJSON, IConverter } from 'brave-json'
 import { DNSClient, IPacket, IQuestion, OPCODE, QR, RCODE } from 'extra-dns'
 import { timeoutSignal } from 'extra-abort'
-import { randomIntInclusive } from 'extra-rand'
+import { randomInt } from 'extra-rand'
 import { IServerInfo } from './utils/parse-server-info.js'
 
 export enum State {
@@ -135,13 +135,13 @@ export async function createMemoizedResolve(
   ): Promise<IPacket> {
     const query: IPacket = {
       header: {
-        ID: randomIntInclusive(0, 2 ** 16)
+        ID: randomInt(0, 2 ** 16)
       , flags: {
           QR: QR.Query
         , OPCODE: OPCODE.Query
         , AA: 0
         , TC: 0
-        , RD: 0
+        , RD: 1
         , RA: 0
         , Z: 0
         , RCODE: 0
