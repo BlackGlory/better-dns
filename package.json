@@ -62,7 +62,7 @@
     "commander": "^12.1.0",
     "extra-abort": "^0.4.0",
     "extra-disk-cache": "^0.12.1",
-    "extra-dns": "^0.1.2",
+    "extra-dns": "^0.1.6",
     "extra-filesystem": "^0.5.1",
     "extra-logger": "^0.7.2",
     "extra-memoize": "^0.9.3",
